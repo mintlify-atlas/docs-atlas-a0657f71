@@ -1,0 +1,106 @@
+---
+title: "AI assistant for legal document review in Mike"
+description: "Use Mike's AI assistant to chat with your legal documents, get summaries, draft edits with tracked changes, and generate Word documents."
+---
+
+Mike's AI assistant lets you have a conversation with your uploaded legal documents. You can ask questions, request summaries, instruct the AI to draft edits, or generate a new Word document from scratch — all without leaving the document you are reviewing. The assistant supports both Claude (Anthropic) and Gemini (Google) models, and you can switch models on a per-message basis.
+
+<Note>
+  You need at least one AI provider API key configured before you can send messages. Add your Anthropic or Google API key in **Settings → API keys**.
+</Note>
+
+## How it works
+
+<Steps>
+  <Step title="Upload at least one document">
+    Upload a PDF, DOCX, or DOC file to Mike. The assistant can only reference documents you have uploaded — it does not have access to external sources.
+  </Step>
+  <Step title="Open or create a chat">
+    Click **New chat** from the sidebar or from inside a project. A new chat session opens with an empty message thread.
+  </Step>
+  <Step title="Attach documents">
+    Click the paperclip icon to attach one or more of your uploaded documents to the chat. For project chats, all project documents are available automatically.
+  </Step>
+  <Step title="Start asking questions">
+    Type your question or instruction and press **Send**. The assistant reads the attached documents and responds in real time.
+  </Step>
+</Steps>
+
+## Document context and citations
+
+When you attach a document to a chat, the assistant extracts its full text and uses it as context when generating responses. The assistant's replies include **inline citations** that reference the specific page or section of the document where the information was found — so you can verify the source without having to re-read the entire file.
+
+If you attach multiple documents, the assistant can compare them, identify discrepancies, or synthesize information across all of them in a single response.
+
+## What the assistant can do
+
+<AccordionGroup>
+  <Accordion title="Question answering">
+    Ask any question about your documents and the assistant will locate the relevant provision, clause, or passage and explain it. For example: "What are the financial covenants in this credit agreement?" or "Does this shareholder agreement include a drag-along right?"
+  </Accordion>
+  <Accordion title="Summarization">
+    Ask the assistant to summarize a document or a specific section. The summary is delivered inline in the chat, with clause references cited throughout. For structured summaries covering standardized topics, consider using a [workflow](/features/workflows) instead.
+  </Accordion>
+  <Accordion title="Document editing with tracked changes">
+    For DOCX and DOC files, you can instruct the assistant to make specific edits. The assistant produces a new document version where every insertion and deletion is stored as a Word tracked change. You can then [accept or reject each change](/features/documents#tracked-changes) individually.
+
+    Example instruction: "Revise clause 14.2 to add a 30-day cure period before an event of default is triggered."
+  </Accordion>
+  <Accordion title="Word document generation">
+    The assistant can generate a brand-new Word document using the `generate_docx` tool. This is used automatically by certain workflows (such as the CP Checklist workflow) and can also be triggered by explicit instructions such as "Generate a summary memo as a Word document."
+
+    Generated documents appear in the chat as a download link and are also saved to your document library.
+  </Accordion>
+</AccordionGroup>
+
+## Streaming responses
+
+The assistant's responses stream token by token as they are generated, so you start reading the answer immediately rather than waiting for the full response to complete. Streaming also applies to document edits — you can see the assistant's reasoning appear before the edited document version is finalized.
+
+## Choosing a model
+
+You can select the AI model for each message independently using the model picker in the chat input bar. The available models are:
+
+| Model | Provider | Notes |
+|-------|----------|-------|
+| `claude-opus-4-7` | Anthropic | Most capable Claude model; best for complex reasoning |
+| `claude-sonnet-4-6` | Anthropic | Balanced speed and capability |
+| `gemini-3.1-pro-preview` | Google | Most capable Gemini model |
+| `gemini-3-flash-preview` | Google | Faster, lower-cost Gemini model; the default |
+
+The model you choose applies only to that message. The next message defaults back to whichever model was last selected in that session.
+
+## Accepting and rejecting AI edits
+
+After the assistant edits a DOCX file, the chat message displays an **edit card** showing:
+
+- The document that was edited
+- The version number of the new edit
+- Accept and reject buttons for each tracked change
+
+<Steps>
+  <Step title="Review the edit">
+    Click the version chip in the edit card to open the document viewer. The tracked changes are shown inline.
+  </Step>
+  <Step title="Accept or reject">
+    Click **Accept** to apply the change, or **Reject** to discard it. You can act on changes from the chat message or from the document viewer — both update the same underlying document.
+  </Step>
+</Steps>
+
+If you reload the chat later, the accept/reject status reflects the current state of the document, not the state at the time the assistant produced the edit.
+
+## Chat history
+
+All chats are saved automatically. When you send your first message, Mike auto-generates a title for the chat based on the message content. You can rename any chat by clicking its title.
+
+Your chat history is accessible from the **Recent chats** panel in the sidebar. For project chats, all collaborators can view and continue the conversation.
+
+## Project chats vs. standalone chats
+
+| | Standalone chat | Project chat |
+|---|---|---|
+| Document access | Only documents you explicitly attach | All documents in the project |
+| Visibility | Only you | All project collaborators |
+| Location | Sidebar → Recent chats | Project → Chats tab |
+
+Use standalone chats for ad-hoc queries on individual documents. Use project chats when you want the assistant to have access to a full matter's document set, or when teammates need to see each other's work.

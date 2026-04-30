@@ -1,81 +1,120 @@
 ---
-title: "Quickstart"
-description: "Start building awesome documentation in minutes"
-icon: 'rocket'
+title: "Get started with Mike, the open-source AI legal platform"
+description: "Clone Mike, connect Supabase and Cloudflare R2, configure your AI provider keys, and complete your first document review in minutes."
 ---
 
-## Get started in three steps
+This quickstart walks you through cloning the Mike repository, configuring your environment variables, running the database migration, and launching both services locally so you can sign in and review your first document.
 
-Get your documentation site running locally and make your first customization.
+## Prerequisites
 
-### Step 1: Set up your local environment
+Before you begin, make sure you have the following:
 
-<AccordionGroup>
-  <Accordion icon="copy" title="Clone your docs locally">
-    During the onboarding process, you created a GitHub repository with your docs content if you didn't already have one. You can find a link to this repository in your [dashboard](https://dashboard.mintlify.com).
-    
-    To clone the repository locally so that you can make and preview changes to your docs, follow the [Cloning a repository](https://docs.github.com/en/repositories/creating-and-managing-repositories/cloning-a-repository) guide in the GitHub docs.
-  </Accordion>
-  <Accordion icon="rectangle-terminal" title="Start the preview server">
-    1. Install the Mintlify CLI: `npm i -g mint`
-    2. Navigate to your docs directory and run: `mint dev`
-    3. Open `http://localhost:3000` to see your docs live!
-    
-    <Tip>Your preview updates automatically as you edit files.</Tip>
-  </Accordion>
-</AccordionGroup>
+- **Node.js** 18 or later
+- **LibreOffice** installed on your machine (required for DOCX → PDF conversion)
+- A **Supabase** project with Auth and Postgres enabled
+- **Cloudflare R2** or another S3-compatible object storage bucket
+- At least one AI provider API key (Gemini, Anthropic, or OpenRouter)
 
-### Step 2: Deploy your changes
+## Setup
 
-<AccordionGroup>
-  <Accordion icon="github" title="Install our GitHub app">
-    Install the Mintlify GitHub app from your [dashboard](https://dashboard.mintlify.com/settings/organization/github-app).
-    
-    Our GitHub app automatically deploys your changes to your docs site, so you don't need to manage deployments yourself.
-</Accordion>
-<Accordion icon="palette" title="Update your site name and colors">
-    For a first change, let's update the name and colors of your docs site.
+<Steps>
+  <Step title="Clone and install dependencies">
+    Clone the Mike repository, then install dependencies for both the backend and frontend from the repository root:
 
-    1. Open `docs.json` in your editor.
-    2. Change the `"name"` field to your project name.
-    3. Update the `"colors"` to match your brand.
-    4. Save and see your changes instantly at `http://localhost:3000`.
+    <CodeGroup>
 
-    <Tip>Try changing the primary color to see an immediate difference!</Tip>
-  </Accordion>
-</AccordionGroup>
+    ```bash Backend
+    npm install --prefix backend
+    ```
 
-### Step 3: Go live
+    ```bash Frontend
+    npm install --prefix frontend
+    ```
 
-<Accordion icon="rocket" title="Publish your docs">
-  1. Commit and push your changes.
-  2. Your docs will update and be live in moments!
-</Accordion>
+    </CodeGroup>
+  </Step>
 
-## Next steps
+  <Step title="Create environment files">
+    Copy the example environment files to create your local configuration:
 
-Now that you have your docs running, explore these key features:
+    ```bash
+    cp backend/.env.example backend/.env
+    cp frontend/.env.local.example frontend/.env.local
+    ```
+  </Step>
 
-<CardGroup cols={2}>
+  <Step title="Run the database migration">
+    Open the **Supabase SQL editor** for your project and run the contents of `backend/migrations/000_one_shot_schema.sql`. This creates all required tables, indexes, row-level security policies, and triggers in a single pass.
 
-<Card title="Write Content" icon="pen-to-square" href="/essentials/markdown">
-  Learn MDX syntax and start writing your documentation.
+    <Info>
+      The repository ships a single one-shot schema file (`000_one_shot_schema.sql`). Run this only on a fresh database — it creates all tables from scratch.
+    </Info>
+  </Step>
+
+  <Step title="Configure environment variables">
+    Open `backend/.env` and fill in the values for your services:
+
+    ```bash backend/.env
+    # Server
+    PORT=3001
+    FRONTEND_URL=http://localhost:3000
+
+    # Supabase
+    SUPABASE_URL=https://your-project.supabase.co
+    SUPABASE_SECRET_KEY=your-supabase-service-role-key
+
+    # S3-compatible storage (e.g. Cloudflare R2)
+    R2_ENDPOINT_URL=https://your-account-id.r2.cloudflarestorage.com
+    R2_ACCESS_KEY_ID=your-r2-access-key
+    R2_SECRET_ACCESS_KEY=your-r2-secret-key
+    R2_BUCKET_NAME=mike
+
+    # AI providers — add the keys for the models you want to enable
+    GEMINI_API_KEY=your-gemini-key
+    ANTHROPIC_API_KEY=your-anthropic-key
+    OPENROUTER_API_KEY=your-openrouter-key
+
+    # Email (optional)
+    RESEND_API_KEY=your-resend-key
+    ```
+
+    Then open `frontend/.env.local` and fill in the Supabase and backend values:
+
+    ```bash frontend/.env.local
+    NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
+    NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY=your-supabase-anon-key
+    SUPABASE_SECRET_KEY=your-supabase-service-role-key
+    NEXT_PUBLIC_API_BASE_URL=http://localhost:3001
+    ```
+
+    <Note>
+      You must provide at least one AI provider key (`GEMINI_API_KEY`, `ANTHROPIC_API_KEY`, or `OPENROUTER_API_KEY`). Mike will only expose models whose keys are configured.
+    </Note>
+  </Step>
+
+  <Step title="Start the backend and frontend">
+    Run both development servers. Start the backend first, then the frontend in a separate terminal:
+
+    <CodeGroup>
+
+    ```bash Backend
+    npm run dev --prefix backend
+    ```
+
+    ```bash Frontend
+    npm run dev --prefix frontend
+    ```
+
+    </CodeGroup>
+
+    The backend starts on port `3001` and the frontend on port `3000` by default.
+  </Step>
+
+  <Step title="Sign in and review your first document">
+    Open [http://localhost:3000](http://localhost:3000) in your browser. Sign up or sign in using Supabase Auth, then create a project, upload a PDF or DOCX file, and start an AI chat to review the document.
+  </Step>
+</Steps>
+
+<Card title="Deploy to production" icon="server" href="/deployment">
+  Ready to go live? Learn how to deploy Mike's frontend and backend to production with Supabase, Cloudflare R2, and your AI provider keys.
 </Card>
-
-<Card title="Customize style" icon="palette" href="/essentials/settings">
-  Make your docs match your brand perfectly.
-</Card>
-
-<Card title="Add code examples" icon="square-code" href="/essentials/code">
-  Include syntax-highlighted code blocks.
-</Card>
-
-<Card title="API documentation" icon="code" href="/api-reference/introduction">
-  Auto-generate API docs from OpenAPI specs.
-</Card>
-
-</CardGroup>
-
-<Note>
-  **Need help?** See our [full documentation](https://mintlify.com/docs) or join our [community](https://mintlify.com/community).
-</Note>

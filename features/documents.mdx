@@ -1,0 +1,118 @@
+---
+title: "Upload and manage legal documents in Mike"
+description: "Upload PDF, DOCX, and DOC files to Mike. View document history, manage tracked-change versions, and accept or reject AI-suggested edits."
+---
+
+Mike stores all your legal documents in one place so the AI assistant can read and edit them. You can upload documents on their own or inside a project, browse the full version history of every file, and accept or reject individual tracked changes that the AI suggests.
+
+<Note>
+  Mike accepts three file types: **PDF**, **DOCX**, and **DOC**. Files in any other format are rejected at upload time.
+</Note>
+
+## Supported file formats
+
+| Format | Extension | Notes |
+|--------|-----------|-------|
+| PDF | `.pdf` | Served directly to the document viewer |
+| Word (Open XML) | `.docx` | Converted to PDF for display; supports tracked changes |
+| Word (legacy) | `.doc` | Converted to PDF for display; supports tracked changes |
+
+## Uploading documents
+
+You can upload documents in two ways.
+
+<Tabs>
+  <Tab title="Standalone document">
+    A standalone document is not attached to any project. Use this when you want to work with a single file or have not yet decided which project it belongs to.
+
+    <Steps>
+      <Step title="Open the Documents page">
+        Navigate to **Documents** in the sidebar.
+      </Step>
+      <Step title="Click Upload">
+        Click the **Upload** button and select a PDF, DOCX, or DOC file from your computer.
+      </Step>
+      <Step title="Wait for processing">
+        Mike uploads the file, extracts its structure, and — for DOCX and DOC files — converts it to PDF for display. The document moves from **processing** to **ready** when this is complete.
+      </Step>
+    </Steps>
+  </Tab>
+  <Tab title="Document inside a project">
+    Uploading directly into a project makes the document immediately available to all project collaborators and to any AI chat scoped to that project.
+
+    <Steps>
+      <Step title="Open the project">
+        Navigate to **Projects** and open the project you want to add the document to.
+      </Step>
+      <Step title="Click Upload">
+        Click **Upload** inside the project's document tab.
+      </Step>
+      <Step title="Wait for processing">
+        The same processing pipeline runs as for standalone documents. The file appears in the project once it is ready.
+      </Step>
+    </Steps>
+
+    You can also move a standalone document into a project at any time from the document's detail page.
+  </Tab>
+</Tabs>
+
+## Document viewer
+
+Once a document is ready, click on it to open the viewer.
+
+- **PDF files** are served directly and rendered in the built-in PDF viewer.
+- **DOCX and DOC files** are converted to PDF via LibreOffice when they are first uploaded. The viewer shows this PDF rendition. If the conversion fails for any reason, the raw DOCX bytes are served as a fallback and rendered client-side.
+
+When a document has pending tracked changes, the viewer switches to a rich DOCX preview mode so you can see each insertion and deletion inline before deciding whether to accept or reject it.
+
+## Version history
+
+Every document has a version history. The first upload creates **V1**. Each time the AI assistant edits the document, a new version is created automatically.
+
+<Steps>
+  <Step title="Open version history">
+    Open the document and click **Version history** (or the version chip in the document header).
+  </Step>
+  <Step title="Browse versions">
+    Each version shows its number, source (upload or AI edit), and creation timestamp.
+  </Step>
+  <Step title="View a historical version">
+    Click any version to render it in the viewer. The URL updates so you can link directly to that version.
+  </Step>
+  <Step title="Download a historical version">
+    Click the download icon next to any version entry. Mike generates a signed URL and the browser downloads the file.
+  </Step>
+</Steps>
+
+<Tip>
+  You can give any version a custom display name to help you track what changed. Open version history, click the edit icon next to a version, and enter a name — for example, "Draft after first review". This name appears as the downloaded filename when someone downloads that version.
+</Tip>
+
+You can also upload a new version of an existing document manually (for example, a revised draft from opposing counsel). The uploaded file must be the same file type as the original.
+
+## Tracked changes
+
+When the AI assistant edits a DOCX or DOC file it stores the result as a new document version containing Word-compatible tracked changes — each AI insertion is wrapped in a `<w:ins>` element and each deletion in a `<w:del>` element, exactly as Microsoft Word would produce them.
+
+### Accepting and rejecting changes
+
+<Steps>
+  <Step title="Open the document with pending changes">
+    Documents with unresolved edits show a badge in the document list. Open the document and the viewer renders each tracked change inline.
+  </Step>
+  <Step title="Review each change">
+    Insertions appear in green underlined text; deletions appear in red struck-through text.
+  </Step>
+  <Step title="Accept or reject">
+    Click **Accept** or **Reject** next to any change. You can also act on individual changes from the chat message that produced them — see [AI assistant](/features/ai-assistant).
+  </Step>
+</Steps>
+
+Accepting a change removes the `<w:ins>`/`<w:del>` markup and writes the result back to the same version (no extra version row is created). Rejecting removes the proposed change and restores the previous text. Both operations are idempotent — if a change was already resolved, Mike returns the current document state without error.
+
+## Downloading documents
+
+- **Single document**: open the document and click **Download**. Mike generates a short-lived signed URL (valid for one hour) and the browser downloads the file.
+- **Multiple documents**: select two or more documents from the list and click **Download as ZIP**. Mike bundles the active version of each document into a `documents.zip` file.
+
+Signed download URLs expire after one hour. If you need to share a document externally, download it first and distribute the file directly.

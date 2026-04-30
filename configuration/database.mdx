@@ -1,0 +1,72 @@
+---
+title: "Set up Mike's Supabase Postgres database"
+description: "Mike uses Supabase Postgres for all data storage. Run the one-shot migration to create the schema and configure your connection keys."
+---
+
+Mike stores all application data — users, projects, documents, chats, and tabular reviews — in a Supabase Postgres database. This page covers creating the database, running the initial schema migration, and wiring the connection credentials into your environment.
+
+## Schema setup
+
+<Steps>
+  <Step title="Create a Supabase project">
+    Go to [supabase.com](https://supabase.com) and create a new project. Choose a region close to where your backend will be hosted to minimise latency.
+  </Step>
+  <Step title="Copy your project URL and service role key">
+    In the Supabase dashboard, navigate to **Project Settings → API**. Copy:
+    - **Project URL** — used as `SUPABASE_URL`
+    - **Service role key** (under *Project API keys*) — used as `SUPABASE_SECRET_KEY`
+
+    Add both values to `backend/.env` and the service role key to `frontend/.env.local`.
+  </Step>
+  <Step title="Run the one-shot migration">
+    Open the **SQL Editor** in your Supabase dashboard and paste the contents of `backend/migrations/000_one_shot_schema.sql`. Run the query. This creates all tables, indexes, RLS policies, and the `handle_new_user` trigger in a single pass.
+
+    <Note>
+      This migration is intended for fresh deployments only. The repository ships a single one-shot schema file — do not re-run it against an existing database.
+    </Note>
+  </Step>
+  <Step title="Enable Row Level Security">
+    RLS is enabled automatically by the migration for sensitive tables (including `user_profiles`). If you are deploying Mike as a multi-tenant service, verify in **Database → Tables** that RLS is active on every table before exposing the instance publicly.
+
+    <Tip>
+      See the [Supabase Row Level Security documentation](https://supabase.com/docs/guides/database/row-level-security) for guidance on writing additional policies if your deployment requires finer-grained access control.
+    </Tip>
+  </Step>
+</Steps>
+
+## Key tables
+
+The migration creates the following tables.
+
+| Table | Purpose |
+|---|---|
+| `user_profiles` | Extended profile data for each authenticated user: display name, organisation, subscription tier, credit usage, and stored AI provider keys. |
+| `projects` | Top-level containers that group documents and chats together. |
+| `project_subfolders` | Hierarchical folder structure within a project. |
+| `documents` | Uploaded document records including filename, file type, size, and processing status. |
+| `document_versions` | Immutable version history for each document, tracking the storage path of each revision. |
+| `document_edits` | Granular tracked-changes records (insertions and deletions) produced by the AI editor, with accept/reject status. |
+| `workflows` | Reusable workflow templates for tabular review, including system-provided and user-defined workflows. |
+| `workflow_shares` | Access-control records that share a workflow with a specific user by email. |
+| `hidden_workflows` | Per-user list of system workflows the user has dismissed from their view. |
+| `chats` | Chat sessions associated with a project or standalone. |
+| `chat_messages` | Individual messages within a chat, storing role, content, attached files, and annotations. |
+| `tabular_reviews` | Tabular review sessions that extract structured data from a set of documents. |
+| `tabular_cells` | Individual extracted cells within a tabular review, keyed by document and column. |
+| `tabular_review_chats` | Chat sessions scoped to a tabular review. |
+| `tabular_review_chat_messages` | Messages within a tabular review chat. |
+
+## Connection settings
+
+```env
+SUPABASE_URL=https://your-project-ref.supabase.co
+SUPABASE_SECRET_KEY=your-service-role-key
+```
+
+The backend creates a server-side Supabase client using these two values on every request. The client is instantiated without session persistence, so no auth state is cached between requests.
+
+<Warning>
+  `SUPABASE_SECRET_KEY` is the **service role key**, not the anon key. It bypasses all Row Level Security policies and has full read/write access to every table. Treat it like a database root password: never expose it in client-side code, logs, or public repositories.
+</Warning>
+
+The frontend also needs the Supabase connection details — use the **anon key** (not the service role key) for `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY`, since this value is bundled into the browser build.

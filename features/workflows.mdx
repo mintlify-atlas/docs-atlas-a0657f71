@@ -1,0 +1,141 @@
+---
+title: "Automate legal analysis with Mike workflows"
+description: "Mike workflows are reusable AI prompts for common legal tasks like CP checklists, credit agreement summaries, and shareholder agreement analysis."
+---
+
+Workflows are saved AI configurations that you can apply to any chat with a single click. Each workflow stores a system prompt — a set of detailed instructions that tells the AI what to do, how to structure its response, and what format to produce. Mike ships with three built-in workflows for common legal tasks, and you can create as many custom workflows as you need.
+
+<Tip>
+  You cannot edit the built-in workflows directly, but you can duplicate one and customize the copy. Open the workflow, click **Duplicate**, make your changes, and save under a new name.
+</Tip>
+
+## Built-in workflows
+
+Mike includes three built-in workflows that cover the most common structured legal analysis tasks.
+
+<AccordionGroup>
+  <Accordion title="Generate CP Checklist">
+    Reads an uploaded credit agreement or financing document and produces a comprehensive Conditions Precedent (CP) checklist as a downloadable Word document.
+
+    The output is formatted as a landscape-orientation DOCX with one section per category of conditions (Corporate, Financial, Legal, Security, and so on). Each section contains a table with four columns:
+
+    | Column | Content |
+    |--------|---------|
+    | Index | Sequential number within the category |
+    | Clause Number | Clause or schedule reference from the agreement |
+    | Clause | Concise description of the condition precedent |
+    | Status | Blank — for the user to complete |
+
+    The document is generated using the `generate_docx` tool and provided as a download link in the chat. The checklist is not displayed inline.
+  </Accordion>
+  <Accordion title="Credit Agreement Summary">
+    Reads an uploaded credit agreement and produces a comprehensive 21-point inline summary. For each topic the AI identifies the key provisions, quotes the relevant clause or schedule references, and flags any unusual, onerous, or non-market terms.
+
+    Topics covered:
+
+    1. Lenders
+    2. Borrowers
+    3. Guarantors
+    4. Other parties (facility agent, security agent, hedge counterparties, etc.)
+    5. Date of agreement
+    6. Facilities
+    7. Amount
+    8. Purpose
+    9. Interest
+    10. Commitment fee
+    11. Repayment schedule
+    12. Maturity
+    13. Security
+    14. Guarantees
+    15. Financial covenants
+    16. Events of default
+    17. Assignment
+    18. Change of control
+    19. Prepayment fee
+    20. Governing law
+    21. Dispute resolution
+
+    The summary is delivered inline in the chat. If you want a Word document version, ask the assistant to generate one after the summary has been produced.
+  </Accordion>
+  <Accordion title="Shareholder Agreement Summary">
+    Reads an uploaded shareholder agreement and produces a comprehensive 15-point summary delivered as a downloadable Word document. For each topic the AI identifies key provisions, quotes the relevant clause references, and flags any unusual, onerous, or market-standard deviations.
+
+    Topics covered:
+
+    1. Parties and shareholdings
+    2. Share classes and rights
+    3. Board composition and governance
+    4. Reserved matters
+    5. Pre-emption on new shares
+    6. Transfer restrictions
+    7. Right of first refusal / pre-emption on transfer
+    8. Drag-along rights
+    9. Tag-along rights
+    10. Anti-dilution protections
+    11. Dividend policy
+    12. Exit and liquidity
+    13. Deadlock
+    14. Non-compete and non-solicitation
+    15. Governing law and dispute resolution
+  </Accordion>
+</AccordionGroup>
+
+## Custom workflows
+
+You can create your own workflows for any recurring task — a specific clause review, a due diligence checklist for a particular asset class, or a standard memo format.
+
+<Steps>
+  <Step title="Open Workflows">
+    Click **Workflows** in the sidebar, then click **New workflow**.
+  </Step>
+  <Step title="Choose a type">
+    Select **Assistant** for a conversational workflow, or **Tabular** if you want the workflow to define column configurations for tabular reviews.
+  </Step>
+  <Step title="Write the prompt">
+    Enter a title and write the system prompt in the **Prompt** field. The system prompt is sent to the AI at the start of every chat that uses this workflow, before any user messages. Be specific about the output format, structure, and any requirements the AI should follow.
+  </Step>
+  <Step title="Save">
+    Click **Save**. The workflow appears in your workflow list and in the chat model picker.
+  </Step>
+</Steps>
+
+### Tabular workflows
+
+A workflow of type **Tabular** defines a set of column configurations that can be applied when creating a new tabular review. Instead of defining columns from scratch each time, you select the tabular workflow and the columns are pre-populated. This is useful for standardizing extraction across many matters — for example, a due diligence checklist with a fixed set of fields for every transaction.
+
+## Using a workflow in a chat
+
+<Steps>
+  <Step title="Open a chat">
+    Open an existing chat or start a new one.
+  </Step>
+  <Step title="Select a workflow">
+    Click the **Workflows** button in the chat input bar and select the workflow you want to apply.
+  </Step>
+  <Step title="Send your message">
+    Type your message as normal. The workflow's system prompt is automatically prepended, so the AI follows the workflow's instructions for this and all subsequent messages in the session.
+  </Step>
+</Steps>
+
+You can only have one workflow active per chat session. Selecting a different workflow replaces the current one.
+
+## Sharing workflows
+
+Workflow owners can share their custom workflows with specific colleagues by email. Shared users can run the workflow in their own chats. You can optionally grant **edit** permission so the recipient can also modify the workflow.
+
+<Steps>
+  <Step title="Open the workflow">
+    Navigate to **Workflows** and open the workflow you want to share.
+  </Step>
+  <Step title="Click Share">
+    Click the **Share** button and enter one or more email addresses.
+  </Step>
+  <Step title="Set permissions">
+    Toggle **Allow editing** on if you want the recipient to be able to modify the workflow's prompt and settings.
+  </Step>
+  <Step title="Confirm">
+    Click **Share**. The workflow appears in the recipient's workflow list, labeled with your name as the source.
+  </Step>
+</Steps>
+
+You can revoke sharing at any time by removing a person from the workflow's share list.

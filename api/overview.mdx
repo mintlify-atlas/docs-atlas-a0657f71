@@ -1,0 +1,82 @@
+---
+title: "Mike REST API: endpoints, auth, and response formats"
+description: "Mike exposes a REST API from the Express backend. All endpoints require a Supabase JWT in the Authorization header. Base URL is configurable."
+---
+
+Mike's backend exposes a REST API built with Express.js. Every request must be authenticated with a Supabase JWT. This page covers the base URL, response conventions, and the available endpoint groups.
+
+## Base URL
+
+The backend runs on port `3001` by default (configurable via the `PORT` environment variable).
+
+```
+http://localhost:3001
+```
+
+In production, replace this with your deployed backend URL. The `FRONTEND_URL` environment variable controls which origin is allowed by CORS — set it to your frontend domain.
+
+## Response format
+
+All successful responses return JSON. Error responses always include a `detail` field:
+
+```json
+{ "detail": "Error message here" }
+```
+
+Common HTTP status codes:
+
+| Status | Meaning |
+|---|---|
+| `200` | Success |
+| `201` | Created |
+| `204` | No content (successful delete) |
+| `400` | Bad request — missing or invalid parameters |
+| `401` | Unauthorized — missing or invalid token |
+| `404` | Not found — resource doesn't exist or you don't have access |
+| `500` | Server error |
+
+<Note>
+Mike returns `404` (not `403`) when a resource exists but the authenticated user doesn't have access. This prevents leaking information about resource existence.
+</Note>
+
+## Streaming endpoints
+
+Two endpoints return [Server-Sent Events](https://developer.mozilla.org/en-US/docs/Web/API/Server-sent_events) (SSE) instead of a single JSON response:
+
+- `POST /chat` — AI chat stream
+- `POST /tabular-review/:reviewId/generate` — tabular extraction stream
+
+These set `Content-Type: text/event-stream`. Each event is a line of the form:
+
+```
+data: {"type":"text_delta","text":"..."}\n\n
+```
+
+The stream ends with:
+
+```
+data: [DONE]\n\n
+```
+
+## Endpoint groups
+
+<CardGroup cols={2}>
+  <Card title="Documents" icon="file-lines" href="/api/documents">
+    Upload, download, and manage PDF/DOCX files. Accept or reject AI-suggested tracked changes.
+  </Card>
+  <Card title="Projects" icon="folder" href="/api/projects">
+    Create projects, add documents, manage folders, and share with collaborators.
+  </Card>
+  <Card title="Chat" icon="comments" href="/api/chat">
+    Start AI chat sessions with your documents. Streaming and persistent chat history.
+  </Card>
+  <Card title="Tabular Reviews" icon="table" href="/api/tabular-reviews">
+    Extract structured data from multiple documents simultaneously using AI.
+  </Card>
+  <Card title="Workflows" icon="diagram-project" href="/api/workflows">
+    Manage reusable AI prompts and share them with collaborators.
+  </Card>
+  <Card title="Authentication" icon="key" href="/api/authentication">
+    How to obtain and pass Supabase JWT tokens.
+  </Card>
+</CardGroup>

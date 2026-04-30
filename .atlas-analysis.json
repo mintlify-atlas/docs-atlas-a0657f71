@@ -1,0 +1,101 @@
+{
+  "projectType": "saas",
+  "projectName": "Mike",
+  "projectDescription": "An open-source AI legal platform for document review, AI-powered chat, tabular data extraction, and automated legal workflows.",
+  "theme": "luma",
+  "primaryColor": "#1B4F72",
+  "lightColor": "#D6EAF8",
+  "darkColor": "#0D2B3E",
+  "navigation": {
+    "tabs": [
+      {
+        "tab": "Documentation",
+        "groups": [
+          {
+            "group": "Get Started",
+            "pages": [
+              "introduction",
+              "quickstart",
+              "deployment"
+            ]
+          },
+          {
+            "group": "Core Features",
+            "pages": [
+              "features/documents",
+              "features/projects",
+              "features/ai-assistant",
+              "features/tabular-reviews",
+              "features/workflows"
+            ]
+          },
+          {
+            "group": "Configuration",
+            "pages": [
+              "configuration/environment",
+              "configuration/ai-models",
+              "configuration/database",
+              "configuration/storage"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "API Reference",
+        "groups": [
+          {
+            "group": "Overview",
+            "pages": [
+              "api/overview",
+              "api/authentication"
+            ]
+          },
+          {
+            "group": "Endpoints",
+            "pages": [
+              "api/documents",
+              "api/projects",
+              "api/chat",
+              "api/tabular-reviews",
+              "api/workflows"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "keyFeatures": [
+    "AI-powered legal document chat with streaming responses (Claude & Gemini)",
+    "Tabular document review for extracting structured data across multiple documents",
+    "Automated legal workflows (CP Checklist, Credit Agreement Summary, SHA Summary)",
+    "Document version management with tracked changes (accept/reject edits)",
+    "Project-based collaboration with document sharing and access control",
+    "DOCX/DOC/PDF upload with LibreOffice-powered PDF conversion",
+    "Workflow sharing with per-user edit permissions",
+    "Multi-model AI support (Claude, Gemini via direct APIs)"
+  ],
+  "publicApiSurface": [
+    "GET /chat — list chats",
+    "POST /chat — streaming AI chat with documents",
+    "GET /chat/:chatId — get chat with messages",
+    "DELETE /chat/:chatId — delete chat",
+    "GET /single-documents — list standalone documents",
+    "POST /single-documents — upload document",
+    "GET /single-documents/:documentId/display — render document as PDF",
+    "GET /single-documents/:documentId/versions — list document versions",
+    "POST /single-documents/:documentId/versions — upload new version",
+    "POST /single-documents/:documentId/edits/:editId/accept — accept tracked change",
+    "POST /single-documents/:documentId/edits/:editId/reject — reject tracked change",
+    "GET /projects — list projects",
+    "POST /projects — create project",
+    "GET /projects/:projectId — get project with documents",
+    "POST /projects/:projectId/documents — upload document to project",
+    "GET /tabular-review — list tabular reviews",
+    "POST /tabular-review — create tabular review",
+    "POST /tabular-review/:reviewId/generate — run AI extraction (streaming)",
+    "POST /tabular-review/:reviewId/chat — chat about review results (streaming)",
+    "GET /workflows — list workflows",
+    "POST /workflows — create workflow",
+    "POST /workflows/:workflowId/share — share workflow with users"
+  ]
+}

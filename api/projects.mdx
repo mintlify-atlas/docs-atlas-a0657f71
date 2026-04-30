@@ -1,0 +1,210 @@
+---
+title: "Projects API: documents, folders, and sharing endpoints"
+description: "Create and manage projects, add documents, organize subfolders, and share with collaborators using the Mike projects API endpoints."
+---
+
+The `/projects` endpoints manage project workspaces. A project groups documents, chats, and tabular reviews together and can be shared with collaborators by email. All endpoints require authentication.
+
+## List projects
+
+```
+GET /projects
+```
+
+Returns all projects owned by or shared with the authenticated user, sorted by creation date descending. Each item includes counts of associated resources.
+
+**Response fields (per project):**
+
+<ResponseField name="id" type="string">Project ID</ResponseField>
+<ResponseField name="name" type="string">Project name</ResponseField>
+<ResponseField name="cm_number" type="string | null">Optional matter/case number</ResponseField>
+<ResponseField name="shared_with" type="string[]">Array of collaborator email addresses</ResponseField>
+<ResponseField name="is_owner" type="boolean">Whether the requesting user owns this project</ResponseField>
+<ResponseField name="document_count" type="number">Number of documents in the project</ResponseField>
+<ResponseField name="chat_count" type="number">Number of chats in the project</ResponseField>
+<ResponseField name="review_count" type="number">Number of tabular reviews in the project</ResponseField>
+
+---
+
+## Create a project
+
+```
+POST /projects
+```
+
+<ParamField body="name" type="string" required>
+  Project name.
+</ParamField>
+<ParamField body="cm_number" type="string">
+  Optional matter or case number for your reference.
+</ParamField>
+<ParamField body="shared_with" type="string[]">
+  Optional array of collaborator email addresses to grant access at creation.
+</ParamField>
+
+**Response:** `201 Created` — the new project record.
+
+---
+
+## Get a project
+
+```
+GET /projects/:projectId
+```
+
+Returns the project with its full document list and folder structure.
+
+**Response includes:** all project fields plus `documents` array and `folders` array.
+
+---
+
+## Update a project
+
+```
+PATCH /projects/:projectId
+```
+
+Updates project metadata. Only the owner can update.
+
+<ParamField body="name" type="string">New project name.</ParamField>
+<ParamField body="cm_number" type="string">Updated matter number.</ParamField>
+<ParamField body="shared_with" type="string[]">
+  Full replacement list of collaborator emails (normalized to lowercase, deduplicated).
+</ParamField>
+
+---
+
+## Delete a project
+
+```
+DELETE /projects/:projectId
+```
+
+Permanently deletes the project. Only the owner can delete.
+
+**Response:** `204 No Content`
+
+---
+
+## Get project members
+
+```
+GET /projects/:projectId/people
+```
+
+Returns the owner and all collaborators with their display names.
+
+**Response:**
+
+<ResponseField name="owner" type="object">
+  <Expandable title="owner fields">
+    <ResponseField name="user_id" type="string">Owner's user ID</ResponseField>
+    <ResponseField name="email" type="string | null">Owner's email</ResponseField>
+    <ResponseField name="display_name" type="string | null">Owner's display name</ResponseField>
+  </Expandable>
+</ResponseField>
+<ResponseField name="members" type="array">
+  Array of `{ email, display_name }` for each collaborator.
+</ResponseField>
+
+---
+
+## List project documents
+
+```
+GET /projects/:projectId/documents
+```
+
+Returns all documents in the project, ordered by creation date ascending.
+
+---
+
+## Upload a document to a project
+
+```
+POST /projects/:projectId/documents
+```
+
+Uploads a new document directly into a project.
+
+**Request:** `multipart/form-data`
+
+<ParamField body="file" type="file" required>
+  PDF, DOCX, or DOC file.
+</ParamField>
+
+**Response:** `201 Created` — the new document record.
+
+---
+
+## Add an existing document to a project
+
+```
+POST /projects/:projectId/documents/:documentId
+```
+
+Moves a standalone document into this project, or copies it if it already belongs to another project.
+
+**Response:** The updated (or newly copied) document record.
+
+---
+
+## List project chats
+
+```
+GET /projects/:projectId/chats
+```
+
+Returns all AI chats in the project (from all collaborators), ordered by creation date descending.
+
+---
+
+## Create a folder
+
+```
+POST /projects/:projectId/folders
+```
+
+<ParamField body="name" type="string" required>Folder name.</ParamField>
+<ParamField body="parent_folder_id" type="string">Optional parent folder ID for nesting.</ParamField>
+
+**Response:** `201 Created` — the new folder record.
+
+---
+
+## Rename or move a folder
+
+```
+PATCH /projects/:projectId/folders/:folderId
+```
+
+<ParamField body="name" type="string">New folder name.</ParamField>
+<ParamField body="parent_folder_id" type="string | null">New parent folder ID, or `null` to move to root.</ParamField>
+
+<Note>
+Mike prevents circular folder moves — moving a folder into one of its own descendants returns `400`.
+</Note>
+
+---
+
+## Delete a folder
+
+```
+DELETE /projects/:projectId/folders/:folderId
+```
+
+Deletes the folder. Documents inside are moved to the project root.
+
+**Response:** `204 No Content`
+
+---
+
+## Move a document to a folder
+
+```
+PATCH /projects/:projectId/documents/:documentId/folder
+```
+
+<ParamField body="folder_id" type="string | null">
+  Target folder ID, or `null` to move the document to the project root.
+</ParamField>

@@ -1,0 +1,143 @@
+---
+title: "Chat API: streaming sessions and history endpoints"
+description: "Start streaming AI chat sessions, retrieve chat history, and manage chats via the Mike chat API. Supports document context and model selection."
+---
+
+The `/chat` endpoints manage AI chat sessions with documents. Chat responses stream as Server-Sent Events. Chats can be standalone or scoped to a project. All endpoints require authentication.
+
+## List chats
+
+```
+GET /chat
+```
+
+Returns all chats owned by the authenticated user, plus chats in projects they own. Ordered by creation date descending.
+
+**Response:** Array of chat records with `id`, `title`, `user_id`, `project_id`, `created_at`.
+
+---
+
+## Create an empty chat
+
+```
+POST /chat/create
+```
+
+Creates a new empty chat session without sending a message.
+
+<ParamField body="project_id" type="string">
+  Optional. Associate the chat with a project.
+</ParamField>
+
+**Response:** `{ "id": "<chat_id>" }`
+
+---
+
+## Send a message (streaming)
+
+```
+POST /chat
+```
+
+Sends a message and streams the AI response as Server-Sent Events. Creates a new chat if `chat_id` is not provided.
+
+<ParamField body="messages" type="array" required>
+  The conversation so far. Each item: `{ "role": "user" | "assistant", "content": "..." }`.
+</ParamField>
+<ParamField body="chat_id" type="string">
+  Optional. Continue an existing chat.
+</ParamField>
+<ParamField body="project_id" type="string">
+  Optional. Scope the chat to a project (the assistant can reference all project documents).
+</ParamField>
+<ParamField body="model" type="string">
+  Optional. Override the model for this message. One of: `claude-opus-4-7`, `claude-sonnet-4-6`, `gemini-3.1-pro-preview`, `gemini-3-flash-preview`.
+</ParamField>
+
+**Response:** `text/event-stream`
+
+SSE event types:
+
+| `type` | Description |
+|---|---|
+| `chat_id` | First event — contains `{ "chatId": "..." }` for new chats |
+| `text_delta` | Streaming text chunk from the assistant |
+| `doc_edited` | The assistant created a tracked change in a document |
+| `tool_call` | The assistant invoked a tool (e.g. `generate_docx`) |
+| `error` | An error occurred during streaming |
+| `[DONE]` | Stream complete |
+
+```bash
+curl -X POST http://localhost:3001/chat \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "messages": [{"role": "user", "content": "Summarize the uploaded contract"}],
+    "model": "gemini-3-flash-preview"
+  }'
+```
+
+---
+
+## Get a chat with messages
+
+```
+GET /chat/:chatId
+```
+
+Returns the full chat record and all messages. Edit statuses in messages are hydrated to reflect the current accept/reject state of any tracked changes.
+
+**Response:**
+
+<ResponseField name="chat" type="object">Chat metadata (`id`, `title`, `user_id`, `project_id`, `created_at`)</ResponseField>
+<ResponseField name="messages" type="array">
+  <Expandable title="message fields">
+    <ResponseField name="id" type="string">Message ID</ResponseField>
+    <ResponseField name="role" type="string">`user` or `assistant`</ResponseField>
+    <ResponseField name="content" type="string | array">Text content or array of event objects for assistant messages</ResponseField>
+    <ResponseField name="annotations" type="array | null">Document citations and edit references</ResponseField>
+    <ResponseField name="created_at" type="string">ISO 8601 timestamp</ResponseField>
+  </Expandable>
+</ResponseField>
+
+---
+
+## Rename a chat
+
+```
+PATCH /chat/:chatId
+```
+
+<ParamField body="title" type="string" required>
+  New chat title.
+</ParamField>
+
+**Response:** `{ "id": "...", "title": "..." }`
+
+---
+
+## Auto-generate a chat title
+
+```
+POST /chat/:chatId/generate-title
+```
+
+Uses the configured title model to generate a concise 3–6 word title from a message.
+
+<ParamField body="message" type="string" required>
+  The user's first message text.
+</ParamField>
+
+**Response:** `{ "title": "Generated Title" }`
+
+---
+
+## Delete a chat
+
+```
+DELETE /chat/:chatId
+```
+
+Permanently deletes the chat and all its messages.
+
+**Response:** `204 No Content`

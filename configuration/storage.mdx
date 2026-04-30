@@ -1,0 +1,84 @@
+---
+title: "Configure S3-compatible storage for Mike"
+description: "Mike stores uploaded documents in any S3-compatible bucket. This guide covers Cloudflare R2 setup and the required bucket configuration."
+---
+
+Mike stores all uploaded document files in S3-compatible object storage. Cloudflare R2 is the recommended option because it has no egress fees, which matters for document-heavy workloads where users frequently download or preview files. Any S3-compatible service works, including AWS S3, MinIO, or Backblaze B2 — the backend uses the AWS SDK and connects via a configurable endpoint URL.
+
+<Tip>
+  Cloudflare R2 charges only for storage and operations, with no fee for data transferred out of the bucket. For a legal platform where users regularly download large documents, this can significantly reduce your monthly storage bill compared to AWS S3.
+</Tip>
+
+## Cloudflare R2 setup
+
+<Steps>
+  <Step title="Create a Cloudflare account and navigate to R2">
+    Log in at [cloudflare.com](https://cloudflare.com) and select **R2 Object Storage** from the sidebar. R2 is available on all Cloudflare plans, including the free tier.
+  </Step>
+  <Step title="Create a bucket">
+    Click **Create bucket** and give it a name. The example configuration uses `mike` as the bucket name — you can use any name, just make sure it matches `R2_BUCKET_NAME` in your environment.
+
+    ```env
+    R2_BUCKET_NAME=mike
+    ```
+  </Step>
+  <Step title="Create an API token">
+    In the R2 dashboard, go to **Manage R2 API tokens → Create API token**. Grant the token **Object Read & Write** permissions scoped to your bucket. Copy the **Access Key ID** and **Secret Access Key** — the secret is shown only once.
+  </Step>
+  <Step title="Note your account ID">
+    Your Cloudflare account ID appears in the URL when you are in the R2 dashboard, and in **Account Home → Overview** on the right-hand side. You need it to construct the endpoint URL.
+  </Step>
+  <Step title="Set the environment variables">
+    Add all four R2 variables to `backend/.env`:
+
+    ```env
+    R2_ENDPOINT_URL=https://your-account-id.r2.cloudflarestorage.com
+    R2_ACCESS_KEY_ID=your-r2-access-key-id
+    R2_SECRET_ACCESS_KEY=your-r2-secret-access-key
+    R2_BUCKET_NAME=mike
+    ```
+
+    Replace `your-account-id` with your Cloudflare account ID (a 32-character hex string).
+  </Step>
+</Steps>
+
+## Storage key structure
+
+Mike organises files in the bucket using a consistent path scheme. Understanding the layout is useful if you need to inspect, migrate, or back up stored files.
+
+| Path pattern | Contents |
+|---|---|
+| `documents/{userId}/{docId}/source{ext}` | Original uploaded file for a document. |
+| `documents/{userId}/{docId}/{stem}.pdf` | PDF rendition of the document used for in-browser preview. |
+| `documents/{userId}/{docId}/versions/{versionSlug}{ext}` | Versioned copies created after each AI edit or user upload. |
+| `generated/{userId}/{docId}/generated{ext}` | AI-generated documents (e.g. drafts produced by workflows). |
+
+All paths are prefixed with the user's UUID, so files belonging to different users are naturally isolated within a single bucket.
+
+## Signed URLs
+
+Mike never serves document files directly from the backend. Instead, it generates **pre-signed download URLs** with a one-hour expiry and returns those to the browser. The browser fetches the file directly from R2, which keeps the backend stateless and avoids proxying large binary payloads.
+
+When a download is triggered, Mike sets the `Content-Disposition` header via the signed URL's response override parameters so the browser saves the file with the original filename rather than the internal storage path.
+
+<Note>
+  If all three R2 variables (`R2_ENDPOINT_URL`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`) are not set, Mike disables storage silently — upload and download endpoints will return null results rather than crashing. This is useful for local development without a bucket, but document uploads will not persist.
+</Note>
+
+## Using a different S3-compatible provider
+
+Point Mike at any S3-compatible service by changing `R2_ENDPOINT_URL` to that provider's endpoint. The region is hard-coded to `auto` in the S3 client, which R2 accepts; some providers require a specific region string. If your provider does, you will need to update the `region` field in `backend/src/lib/storage.ts`.
+
+```env
+# AWS S3 example
+R2_ENDPOINT_URL=https://s3.us-east-1.amazonaws.com
+R2_ACCESS_KEY_ID=AKIAIOSFODNN7EXAMPLE
+R2_SECRET_ACCESS_KEY=wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
+R2_BUCKET_NAME=my-mike-bucket
+
+# MinIO example
+R2_ENDPOINT_URL=http://localhost:9000
+R2_ACCESS_KEY_ID=minioadmin
+R2_SECRET_ACCESS_KEY=minioadmin
+R2_BUCKET_NAME=mike
+```

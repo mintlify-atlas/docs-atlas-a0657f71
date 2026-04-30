@@ -1,0 +1,176 @@
+---
+title: "Workflows API: create, share, and manage endpoints"
+description: "Create, update, and share reusable AI workflow prompts via the Mike workflows API. Manage both assistant and tabular workflow types."
+---
+
+The `/workflows` endpoints manage reusable AI workflow prompts. Workflows can be of type `assistant` (chat prompts) or `tabular` (column configurations for tabular reviews). They can be shared with other users with optional edit access. All endpoints require authentication.
+
+<Note>
+Built-in system workflows (`is_system: true`) are read-only and cannot be modified or deleted.
+</Note>
+
+## List workflows
+
+```
+GET /workflows
+```
+
+Returns all workflows owned by or shared with the authenticated user.
+
+<ParamField query="type" type="string">
+  Optional. Filter by workflow type: `assistant` or `tabular`.
+</ParamField>
+
+**Response fields (per workflow):**
+
+<ResponseField name="id" type="string">Workflow ID</ResponseField>
+<ResponseField name="title" type="string">Workflow title</ResponseField>
+<ResponseField name="type" type="string">`assistant` or `tabular`</ResponseField>
+<ResponseField name="prompt_md" type="string | null">Markdown system prompt (for `assistant` type)</ResponseField>
+<ResponseField name="columns_config" type="array | null">Column definitions (for `tabular` type)</ResponseField>
+<ResponseField name="practice" type="string | null">Optional practice area tag</ResponseField>
+<ResponseField name="is_system" type="boolean">Whether this is a built-in workflow</ResponseField>
+<ResponseField name="allow_edit" type="boolean">Whether the requesting user can edit this workflow</ResponseField>
+<ResponseField name="is_owner" type="boolean">Whether the requesting user owns this workflow</ResponseField>
+<ResponseField name="shared_by_name" type="string | null">Display name of the sharer (for shared workflows)</ResponseField>
+
+---
+
+## Create a workflow
+
+```
+POST /workflows
+```
+
+<ParamField body="title" type="string" required>
+  Workflow title.
+</ParamField>
+<ParamField body="type" type="string" required>
+  `assistant` or `tabular`.
+</ParamField>
+<ParamField body="prompt_md" type="string">
+  Markdown system prompt. Used for `assistant` type workflows.
+</ParamField>
+<ParamField body="columns_config" type="array">
+  Column definitions array. Used for `tabular` type workflows.
+</ParamField>
+<ParamField body="practice" type="string | null">
+  Optional practice area label (e.g. `"finance"`, `"corporate"`).
+</ParamField>
+
+**Response:** `201 Created` — the new workflow record.
+
+---
+
+## Get a workflow
+
+```
+GET /workflows/:workflowId
+```
+
+Returns a single workflow. Accessible if you own it or it has been shared with you.
+
+---
+
+## Update a workflow
+
+```
+PUT /workflows/:workflowId
+PATCH /workflows/:workflowId
+```
+
+Both `PUT` and `PATCH` use the same handler. Updates `title`, `prompt_md`, `columns_config`, and/or `practice`.
+
+<ParamField body="title" type="string">New title.</ParamField>
+<ParamField body="prompt_md" type="string">Updated system prompt.</ParamField>
+<ParamField body="columns_config" type="array">Updated column definitions.</ParamField>
+<ParamField body="practice" type="string | null">Updated practice area (pass `null` to clear).</ParamField>
+
+<Warning>
+Only the workflow owner, or a user with `allow_edit: true`, can update a workflow. System workflows cannot be updated.
+</Warning>
+
+---
+
+## Delete a workflow
+
+```
+DELETE /workflows/:workflowId
+```
+
+Only the workflow owner can delete. System workflows cannot be deleted.
+
+**Response:** `204 No Content`
+
+---
+
+## Share a workflow
+
+```
+POST /workflows/:workflowId/share
+```
+
+Shares the workflow with one or more users by email. Only the workflow owner can share.
+
+<ParamField body="emails" type="string[]" required>
+  One or more email addresses to share with.
+</ParamField>
+<ParamField body="allow_edit" type="boolean">
+  Whether the recipients can edit the workflow. Defaults to `false` (view-only).
+</ParamField>
+
+**Response:** `204 No Content`
+
+If you share with the same email again, the existing share record is updated (upsert on `workflow_id` + `shared_with_email`).
+
+---
+
+## List workflow shares
+
+```
+GET /workflows/:workflowId/shares
+```
+
+Returns all share records for a workflow. Only the owner can list shares.
+
+**Response fields (per share):**
+
+<ResponseField name="id" type="string">Share record ID</ResponseField>
+<ResponseField name="shared_with_email" type="string">Recipient email</ResponseField>
+<ResponseField name="allow_edit" type="boolean">Whether the recipient has edit access</ResponseField>
+<ResponseField name="created_at" type="string">ISO 8601 timestamp</ResponseField>
+
+---
+
+## Remove a share
+
+```
+DELETE /workflows/:workflowId/shares/:shareId
+```
+
+Revokes access for a specific share. Only the owner can remove shares.
+
+**Response:** `204 No Content`
+
+---
+
+## Hidden workflows
+
+Users can hide workflows from their list without deleting them.
+
+**Hide a workflow:**
+```
+POST /workflows/hidden
+```
+<ParamField body="workflow_id" type="string" required>ID of the workflow to hide.</ParamField>
+
+**List hidden workflow IDs:**
+```
+GET /workflows/hidden
+```
+Returns an array of hidden workflow IDs.
+
+**Unhide a workflow:**
+```
+DELETE /workflows/hidden/:workflowId
+```

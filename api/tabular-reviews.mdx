@@ -1,0 +1,226 @@
+---
+title: "Tabular Reviews API: extraction and chat endpoints"
+description: "Create and run tabular reviews to extract structured data from multiple documents using AI. Includes streaming generation, cell management, and review chat."
+---
+
+The `/tabular-review` endpoints manage tabular reviews — grids where rows are documents and columns are AI-extracted data fields. The generate endpoint streams results per cell as they complete. All endpoints require authentication.
+
+## List tabular reviews
+
+```
+GET /tabular-review
+```
+
+Returns all tabular reviews accessible to the authenticated user (owned, shared via project, or shared directly by email). Includes a `document_count` field.
+
+<ParamField query="project_id" type="string">
+  Optional. Filter to reviews within a specific project.
+</ParamField>
+
+---
+
+## Create a tabular review
+
+```
+POST /tabular-review
+```
+
+<ParamField body="document_ids" type="string[]" required>
+  IDs of documents to include as rows.
+</ParamField>
+<ParamField body="columns_config" type="array" required>
+  Column definitions. Each item:
+  <Expandable title="column object">
+    <ResponseField name="index" type="number">Zero-based column index</ResponseField>
+    <ResponseField name="name" type="string">Column display name</ResponseField>
+    <ResponseField name="prompt" type="string">Extraction prompt for this column</ResponseField>
+    <ResponseField name="format" type="string">Response format — see formats table below</ResponseField>
+    <ResponseField name="tags" type="string[]">Required when `format` is `tag`</ResponseField>
+  </Expandable>
+</ParamField>
+<ParamField body="title" type="string">Optional review title.</ParamField>
+<ParamField body="project_id" type="string">Optional project to associate the review with.</ParamField>
+<ParamField body="workflow_id" type="string">Optional workflow ID whose `columns_config` was used as a template.</ParamField>
+
+**Column formats:**
+
+| Format | AI response constraint |
+|---|---|
+| `text` | Free-form text (default) |
+| `bulleted_list` | Markdown bulleted list |
+| `number` | Single number, no units |
+| `percentage` | Single percentage value (e.g. `42%`) |
+| `monetary_amount` | Currency value with symbol (e.g. `$1,234.56`) |
+| `currency` | Currency code(s) in `[[USD]]` brackets |
+| `yes_no` | `[[Yes]]` or `[[No]]` with inline citation |
+| `date` | Date in `DD Month YYYY` format with inline citation |
+| `tag` | One of the provided `tags` values in `[[tag]]` brackets |
+
+**Response:** `201 Created` — the new review record.
+
+---
+
+## Get a tabular review
+
+```
+GET /tabular-review/:reviewId
+```
+
+Returns the review, all cells, and all associated documents.
+
+**Response:**
+
+<ResponseField name="review" type="object">Review metadata including `columns_config` and `is_owner`</ResponseField>
+<ResponseField name="cells" type="array">
+  <Expandable title="cell fields">
+    <ResponseField name="document_id" type="string">The document this cell belongs to</ResponseField>
+    <ResponseField name="column_index" type="number">The column index</ResponseField>
+    <ResponseField name="status" type="string">`pending`, `generating`, `done`, or `error`</ResponseField>
+    <ResponseField name="content" type="object | null">Parsed cell content: `{ summary, flag, reasoning }`</ResponseField>
+  </Expandable>
+</ResponseField>
+<ResponseField name="documents" type="array">Document records for all rows</ResponseField>
+
+---
+
+## Run AI extraction (streaming)
+
+```
+POST /tabular-review/:reviewId/generate
+```
+
+Runs AI extraction for all pending cells. Skips cells that already have `status: "done"`. Streams results as SSE.
+
+**Response:** `text/event-stream`
+
+Each event has `type: "cell_update"`:
+
+```json
+{
+  "type": "cell_update",
+  "document_id": "...",
+  "column_index": 2,
+  "status": "done",
+  "content": {
+    "summary": "42%",
+    "flag": "green",
+    "reasoning": "Found in §4.2: 'The margin is 42%...'"
+  }
+}
+```
+
+---
+
+## Regenerate a single cell
+
+```
+POST /tabular-review/:reviewId/regenerate-cell
+```
+
+Re-runs extraction for one specific cell.
+
+<ParamField body="document_id" type="string" required>Document ID for the cell's row.</ParamField>
+<ParamField body="column_index" type="number" required>Column index for the cell.</ParamField>
+
+**Response:** The updated cell content object.
+
+---
+
+## Clear cells
+
+```
+POST /tabular-review/:reviewId/clear-cells
+```
+
+Resets cells back to `pending` status (blanks content) for the given documents.
+
+<ParamField body="document_ids" type="string[]" required>
+  Document IDs whose cells should be cleared.
+</ParamField>
+
+**Response:** `204 No Content`
+
+---
+
+## Update a review
+
+```
+PATCH /tabular-review/:reviewId
+```
+
+Update title, columns, documents, or sharing.
+
+<ParamField body="title" type="string">New review title.</ParamField>
+<ParamField body="columns_config" type="array">Updated column definitions (creates new cells for new columns).</ParamField>
+<ParamField body="document_ids" type="string[]">Updated document list (removes cells for removed documents).</ParamField>
+<ParamField body="shared_with" type="string[]">Owner only. Full replacement list of collaborator emails.</ParamField>
+
+---
+
+## Delete a review
+
+```
+DELETE /tabular-review/:reviewId
+```
+
+**Response:** `204 No Content`
+
+---
+
+## Generate a column prompt
+
+```
+POST /tabular-review/prompt
+```
+
+Uses AI to suggest an extraction prompt for a column based on its title and expected format.
+
+<ParamField body="title" type="string" required>Column title (e.g. "Interest rate").</ParamField>
+<ParamField body="format" type="string">Expected format — same values as `columns_config.format`.</ParamField>
+<ParamField body="documentName" type="string">Optional document type hint (e.g. "credit agreement").</ParamField>
+<ParamField body="tags" type="string[]">Required when `format` is `tag`.</ParamField>
+
+**Response:** `{ "prompt": "...", "source": "llm" }`
+
+---
+
+## Review chat (streaming)
+
+```
+POST /tabular-review/:reviewId/chat
+```
+
+Sends a chat message about the review's extracted data. The assistant can read cell content via the `read_table_cells` tool. Streams SSE.
+
+<ParamField body="messages" type="array" required>Conversation history.</ParamField>
+<ParamField body="chat_id" type="string">Optional existing chat ID to continue.</ParamField>
+
+---
+
+## List review chats
+
+```
+GET /tabular-review/:reviewId/chats
+```
+
+Returns all chat sessions for the review.
+
+---
+
+## Get chat messages
+
+```
+GET /tabular-review/:reviewId/chats/:chatId/messages
+```
+
+Returns all messages for a specific review chat.
+
+---
+
+## Delete a review chat
+
+```
+DELETE /tabular-review/:reviewId/chats/:chatId
+```
+
+**Response:** `204 No Content`

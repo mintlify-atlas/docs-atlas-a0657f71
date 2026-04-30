@@ -1,0 +1,118 @@
+---
+title: "Deploy Mike to production: frontend, backend, and services"
+description: "Deploy Mike's Next.js frontend and Express backend to production: configure Supabase, Cloudflare R2, environment variables, and CORS."
+---
+
+This page covers deploying Mike's two services — the Next.js frontend and the Express backend — to production. Both services are stateless and can be deployed to any Node.js-compatible host. The sections below cover recommended platforms, build commands, and the full list of required environment variables.
+
+## Required services
+
+Before deploying, make sure you have accounts and credentials for:
+
+- **Supabase** — Auth and Postgres database. Run `backend/migrations/000_one_shot_schema.sql` in the Supabase SQL editor for a fresh database.
+- **S3-compatible storage** — Cloudflare R2 is recommended, but any S3-compatible provider works.
+- **AI provider keys** — At least one of: Gemini (Google), Anthropic, or OpenRouter.
+- **LibreOffice** — Must be available in the backend runtime environment for DOCX → PDF conversion.
+
+<Tip>
+  The backend's `nixpacks.toml` installs LibreOffice automatically when deploying to Railway. On other platforms, ensure LibreOffice is available in the system path of the server running the backend.
+</Tip>
+
+## Deployment
+
+<Tabs>
+  <Tab title="Frontend">
+    The frontend is a Next.js 16 application. You can deploy it to **Cloudflare Workers** using the included OpenNext adapter, or to any Node.js host.
+
+    ### Cloudflare Workers (recommended)
+
+    The repository includes `open-next.config.ts` and a `deploy` script in `frontend/package.json` that use [`@opennextjs/cloudflare`](https://github.com/opennextjs/opennextjs-cloudflare) to build and deploy to Cloudflare Workers:
+
+    ```bash
+    npm run deploy --prefix frontend
+    ```
+
+    This runs `opennextjs-cloudflare build && opennextjs-cloudflare deploy` under the hood. You will need a Cloudflare account and `wrangler` configured with your credentials.
+
+    ### Node.js host (Vercel, Render, etc.)
+
+    For any Node.js-compatible host, build and start the Next.js server directly:
+
+    ```bash
+    npm run build --prefix frontend
+    npm run start --prefix frontend
+    ```
+
+    Set all `NEXT_PUBLIC_*` and server-side environment variables in your host's environment configuration before building.
+  </Tab>
+
+  <Tab title="Backend">
+    The backend is an Express API built with TypeScript. It can be deployed to any Node.js host such as Railway, Render, or Fly.io.
+
+    ### Build and start
+
+    Compile TypeScript, then start the compiled server:
+
+    ```bash
+    npm run build --prefix backend
+    npm start --prefix backend
+    ```
+
+    The `build` script runs `tsc` and outputs to `dist/`. The `start` script runs `node dist/index.js`.
+
+    ### Railway
+
+    The repository includes `backend/nixpacks.toml`, which tells Railway's Nixpacks builder to install LibreOffice:
+
+    ```toml
+    [phases.setup]
+    nixPkgs = ["libreoffice"]
+    ```
+
+    Point Railway at the `backend/` directory (or set the root directory in your Railway service settings) and it will detect the `nixpacks.toml` automatically.
+
+    ### PORT environment variable
+
+    The backend reads the `PORT` environment variable to determine which port to listen on. Most platforms set this automatically; make sure you do not hard-code a value that conflicts with the platform's assignment.
+  </Tab>
+</Tabs>
+
+## Environment variables
+
+### Backend
+
+Set these variables in your backend host's environment configuration:
+
+| Variable | Description |
+|---|---|
+| `PORT` | Port the Express server listens on. Defaults to `3001`. |
+| `FRONTEND_URL` | URL of the deployed frontend. Used for CORS. Must match exactly. |
+| `SUPABASE_URL` | Your Supabase project URL (e.g. `https://abc123.supabase.co`). |
+| `SUPABASE_SECRET_KEY` | Supabase service-role key. Keep this secret — it bypasses row-level security. |
+| `R2_ENDPOINT_URL` | S3-compatible storage endpoint URL. |
+| `R2_ACCESS_KEY_ID` | Access key ID for your R2 (or S3) bucket. |
+| `R2_SECRET_ACCESS_KEY` | Secret access key for your R2 (or S3) bucket. |
+| `R2_BUCKET_NAME` | Name of the storage bucket (e.g. `mike`). |
+| `GEMINI_API_KEY` | Google Gemini API key. Required to enable Gemini models. |
+| `ANTHROPIC_API_KEY` | Anthropic API key. Required to enable Claude models. |
+| `OPENROUTER_API_KEY` | OpenRouter API key. Required to enable OpenRouter models. |
+| `RESEND_API_KEY` | Resend API key for transactional email. Optional. |
+
+### Frontend
+
+| Variable | Description |
+|---|---|
+| `NEXT_PUBLIC_SUPABASE_URL` | Your Supabase project URL. Exposed to the browser. |
+| `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY` | Supabase anon (public) key. Exposed to the browser. |
+| `SUPABASE_SECRET_KEY` | Supabase service-role key. Used in server-side Next.js routes only. |
+| `NEXT_PUBLIC_API_BASE_URL` | Base URL of the deployed backend API (e.g. `https://api.yourdomain.com`). |
+
+<Warning>
+  **CORS:** The backend uses `FRONTEND_URL` to configure the CORS `origin` header. Set this to the exact URL of your deployed frontend, including the protocol and any port. Mismatches will cause API requests from the browser to fail.
+</Warning>
+
+## License
+
+<Warning>
+  Mike is licensed under **AGPL-3.0-only**. If you deploy Mike publicly — including as a hosted service — you must make the complete source code of your deployment available to users under the same license. Review the full license terms in `LICENSE` before deploying.
+</Warning>

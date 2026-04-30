@@ -1,0 +1,136 @@
+---
+title: "Extract structured data with tabular reviews"
+description: "Use Mike's tabular reviews to extract specific data fields from multiple legal documents simultaneously and export the results to Excel."
+---
+
+A tabular review is a spreadsheet-style grid where each row is a document and each column is a data field you want to extract. You define the columns — for example, "Governing law", "Maturity date", or "Interest rate" — and Mike's AI reads every document and fills in each cell simultaneously. The completed grid can be exported to Excel for further analysis or reporting.
+
+<Tip>
+  Use the **AI prompt generator** when defining your columns. Enter a column title and click **Generate prompt** and Mike will write a high-quality extraction prompt for you based on the column name, the expected format, and any tags you have defined.
+</Tip>
+
+## What a tabular review is
+
+Think of a tabular review as a due diligence checklist run by AI. You select a set of documents (often from a project), define the fields you want to extract, and then trigger generation. Mike processes every document in parallel — one LLM call per document covers all the columns at once — and streams the results back cell by cell as they arrive.
+
+Each cell contains:
+- A **summary** — the extracted value in the format you specified
+- A **reasoning** — the AI's explanation of where in the document it found the value
+- A **flag** — a confidence indicator (green, grey, yellow, or red)
+
+## Creating a review
+
+<Steps>
+  <Step title="Open Tabular reviews">
+    Click **Tabular reviews** in the sidebar, then click **New review**.
+  </Step>
+  <Step title="Select documents">
+    Choose the documents you want to include. You can pick individual documents or select all documents in a project.
+  </Step>
+  <Step title="Define columns">
+    Add one column for each field you want to extract. For each column you provide:
+    - **Name** — the label shown in the column header (e.g. "Governing law")
+    - **Prompt** — the extraction instruction sent to the AI (e.g. "What is the governing law of this agreement?")
+    - **Format** — the expected output format (see below)
+  </Step>
+  <Step title="Run generation">
+    Click **Generate**. Mike streams cell results back as they are produced. You can see cells fill in one by one across the grid.
+  </Step>
+</Steps>
+
+## Column formats
+
+Each column has a format that tells the AI how to structure its answer and constrains the output to make results consistent across documents.
+
+| Format | Description | Example output |
+|--------|-------------|----------------|
+| `text` | Free-form text | "New York" |
+| `bulleted_list` | Markdown bulleted list | `* Item one\n* Item two` |
+| `number` | Single number, no units | `42` |
+| `percentage` | Single percentage value | `4.5%` |
+| `monetary_amount` | Monetary value with currency symbol | `$1,250,000` |
+| `currency` | Currency code(s) wrapped in `[[…]]` | `[[USD]]` |
+| `yes_no` | `[[Yes]]` or `[[No]]` with a citation | `[[Yes]]` |
+| `date` | Date in DD Month YYYY format | `15 March 2024` |
+| `tag` | One of a set of tags you define, wrapped in `[[…]]` | `[[Senior secured]]` |
+
+For `yes_no`, `date`, and `tag` formats the AI is required to include an inline citation pointing to the exact language in the document that supports its answer.
+
+For `tag`, you supply the list of allowed tag values when you define the column. The AI must choose exactly one tag from your list.
+
+## AI-generated column prompts
+
+Writing a good extraction prompt from scratch can be tricky. Mike includes a prompt generator that uses the AI to suggest an appropriate prompt for you.
+
+<Steps>
+  <Step title="Enter a column name">
+    Type the column name (e.g. "Change of control") in the name field.
+  </Step>
+  <Step title="Select a format">
+    Choose the expected output format from the dropdown.
+  </Step>
+  <Step title="Click Generate prompt">
+    Click **Generate prompt**. Mike sends the column name, format, and optional document context to the AI and fills in the prompt field with a suggested extraction instruction.
+  </Step>
+  <Step title="Review and edit">
+    The generated prompt focuses on what to extract without duplicating format instructions (those are applied automatically). Edit the prompt if needed before saving the column.
+  </Step>
+</Steps>
+
+## Cell flags
+
+Each cell is assigned a flag after generation to indicate the AI's confidence level:
+
+<CardGroup cols={2}>
+  <Card title="Green" icon="circle-check">
+    High confidence. The value was found clearly in the document.
+  </Card>
+  <Card title="Grey" icon="circle">
+    Neutral or not applicable. The value may not be present, or the question does not apply to this document.
+  </Card>
+  <Card title="Yellow" icon="triangle-exclamation">
+    Medium confidence. The AI found a value but is uncertain whether it fully answers the question.
+  </Card>
+  <Card title="Red" icon="circle-xmark">
+    Low confidence or error. The AI could not find a reliable answer or generation failed for this cell.
+  </Card>
+</CardGroup>
+
+You can regenerate any individual cell by clicking the refresh icon inside the cell. This re-runs the extraction for that document–column pair without affecting the rest of the grid.
+
+## Tabular chat
+
+Once a review is populated you can ask questions about the results using the tabular chat panel. The AI has access to all cell values and can summarize findings across rows, identify outliers, or compare terms across documents.
+
+Answers include **inline citations** that reference the specific cell (document and column) the AI is drawing on, so you can verify each claim directly in the grid.
+
+Chat history is saved per review. All collaborators who have access to the review can view and continue any chat thread.
+
+## Exporting to Excel
+
+Click **Export to Excel** on the review page to download the grid as an `.xlsx` file. The export includes:
+
+- One row per document
+- One column per data field
+- The extracted summary value in each cell
+- A header row with column names
+
+The Excel file can be opened directly in Microsoft Excel, Google Sheets, or any compatible application.
+
+## Sharing tabular reviews
+
+You can share a standalone tabular review (one not linked to a project) with specific collaborators by email.
+
+<Steps>
+  <Step title="Open the review">
+    Navigate to **Tabular reviews** and open the review you want to share.
+  </Step>
+  <Step title="Click the People icon">
+    Click the **People** icon in the review header.
+  </Step>
+  <Step title="Add collaborators">
+    Enter email addresses and click **Share**. Collaborators can view the review and participate in tabular chats.
+  </Step>
+</Steps>
+
+Only the review owner can modify the sharing list.

@@ -1,0 +1,49 @@
+---
+title: "Environment variables reference for Mike"
+description: "Complete reference for all Mike backend and frontend environment variables: Supabase, R2 storage, AI provider keys, and service URLs."
+---
+
+Mike is configured entirely through environment variables. The backend reads from `backend/.env` and the frontend reads from `frontend/.env.local`. Neither file is committed to the repository — you create them yourself before starting the services.
+
+<Note>
+  Both `backend/.env.example` and `frontend/.env.local.example` contain every variable with placeholder values. Copy each file to its live equivalent and fill in your real credentials before running Mike.
+
+  ```bash
+  cp backend/.env.example backend/.env
+  cp frontend/.env.local.example frontend/.env.local
+  ```
+</Note>
+
+## Backend environment variables
+
+These variables are read by the Express API server at startup (`backend/.env`).
+
+| Variable | Default | Description |
+|---|---|---|
+| `PORT` | `3001` | Port the backend HTTP server listens on. |
+| `FRONTEND_URL` | `http://localhost:3000` | Origin of the frontend application. Used to set CORS `Access-Control-Allow-Origin` headers. Set this to your public frontend URL in production. |
+| `SUPABASE_URL` | — | Full URL of your Supabase project, e.g. `https://abcdef.supabase.co`. |
+| `SUPABASE_SECRET_KEY` | — | Supabase service role key. Grants admin database access — keep this out of client-side code and source control. |
+| `R2_ENDPOINT_URL` | — | Cloudflare R2 (or S3-compatible) endpoint, e.g. `https://<account-id>.r2.cloudflarestorage.com`. |
+| `R2_ACCESS_KEY_ID` | — | Access key ID for your R2 API token. |
+| `R2_SECRET_ACCESS_KEY` | — | Secret access key for your R2 API token. |
+| `R2_BUCKET_NAME` | `mike` | Name of the storage bucket where documents are stored. |
+| `GEMINI_API_KEY` | — | Google AI Studio API key, used for all Gemini model requests when no user-supplied key is present. |
+| `ANTHROPIC_API_KEY` | — | Anthropic API key, used for all Claude model requests when no user-supplied key is present. |
+| `OPENROUTER_API_KEY` | — | OpenRouter API key. Required only if you expose OpenRouter-proxied models to users. |
+| `RESEND_API_KEY` | — | [Resend](https://resend.com) API key for transactional email (invitations, notifications). |
+
+## Frontend environment variables
+
+These variables are read by the Next.js application (`frontend/.env.local`). Variables prefixed with `NEXT_PUBLIC_` are bundled into the client build and visible in the browser — do not put secrets there.
+
+| Variable | Description |
+|---|---|
+| `NEXT_PUBLIC_SUPABASE_URL` | Public URL of your Supabase project. Matches `SUPABASE_URL` on the backend. |
+| `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY` | Supabase anonymous (public) key. Safe to expose in the browser — enforces Row Level Security. |
+| `SUPABASE_SECRET_KEY` | Supabase service role key used by Next.js server-side routes (e.g. auth helpers). Not exposed to the browser. |
+| `NEXT_PUBLIC_API_BASE_URL` | Base URL of the backend API, e.g. `http://localhost:3001` in development or `https://api.yourdomain.com` in production. |
+
+<Warning>
+  Never commit `.env` or `.env.local` files to version control. Both files are listed in `.gitignore` by default. Exposing `SUPABASE_SECRET_KEY` or any AI provider key would give anyone who reads your repository unrestricted access to your database and API accounts.
+</Warning>

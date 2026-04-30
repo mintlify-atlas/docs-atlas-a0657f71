@@ -1,0 +1,64 @@
+---
+title: "Mike: AI-powered legal document review platform"
+description: "Mike is an open-source AI legal platform for document review, tabular extraction, and automated workflows. Self-hosted, supports Claude and Gemini."
+---
+
+Mike is an open-source AI legal platform that combines document management, AI-powered chat, tabular data extraction, and automated legal workflows. Built with a Next.js frontend and Express backend, Mike supports Claude and Gemini language models and is designed to be self-hosted with Supabase and S3-compatible storage.
+
+<CardGroup cols={2}>
+  <Card title="Quickstart" icon="rocket" href="/quickstart">
+    Set up Mike and run your first AI-powered document review in minutes.
+  </Card>
+  <Card title="Deployment" icon="server" href="/deployment">
+    Deploy Mike to production with Supabase, Cloudflare R2, and your model keys.
+  </Card>
+  <Card title="Core Features" icon="star" href="/features/documents">
+    Explore documents, projects, AI chat, tabular reviews, and workflows.
+  </Card>
+  <Card title="API Reference" icon="code" href="/api/overview">
+    Browse the full REST API for integrating with Mike programmatically.
+  </Card>
+</CardGroup>
+
+## What Mike does
+
+Mike is purpose-built for legal professionals who need to review, analyze, and extract information from legal documents at scale.
+
+<CardGroup cols={2}>
+  <Card title="AI Legal Chat" icon="comments" href="/features/ai-assistant">
+    Chat with your documents using Claude or Gemini. The assistant reads your uploaded PDFs and DOCX files, suggests edits with tracked changes, and generates Word documents.
+  </Card>
+  <Card title="Tabular Reviews" icon="table" href="/features/tabular-reviews">
+    Extract structured data from multiple documents simultaneously into a spreadsheet-style grid. Export results to Excel.
+  </Card>
+  <Card title="Document Management" icon="file-lines" href="/features/documents">
+    Upload PDF, DOCX, and DOC files. View full version history with tracked changes, and accept or reject AI-suggested edits.
+  </Card>
+  <Card title="Legal Workflows" icon="diagram-project" href="/features/workflows">
+    Run built-in workflows for CP checklists, credit agreement summaries, and shareholder agreement summaries — or create your own.
+  </Card>
+  <Card title="Projects" icon="folder" href="/features/projects">
+    Organize documents into projects, share with collaborators, and run AI chats scoped to all project documents.
+  </Card>
+  <Card title="Self-Hosted" icon="shield-halved" href="/deployment">
+    AGPL-3.0 licensed. Run entirely on your own infrastructure with your own AI API keys and storage.
+  </Card>
+</CardGroup>
+
+## Technology stack
+
+Mike is built on a modern open-source stack:
+
+| Layer | Technology |
+|---|---|
+| Frontend | Next.js 16, React 19, Tailwind CSS |
+| Backend | Express.js, TypeScript |
+| Database | Supabase (Postgres) |
+| Auth | Supabase Auth |
+| Storage | S3-compatible (e.g. Cloudflare R2) |
+| AI Models | Claude (Anthropic), Gemini (Google) |
+| Document conversion | LibreOffice |
+
+## License
+
+Mike is licensed under [AGPL-3.0](https://github.com/willchen96/mike/blob/main/LICENSE). You are free to self-host, modify, and distribute Mike under the terms of that license.

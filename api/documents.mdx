@@ -1,0 +1,212 @@
+---
+title: "Documents API: upload, versioning, and edit endpoints"
+description: "Upload, retrieve, and manage PDF and DOCX documents via the Mike API. Includes version history, tracked change resolution, and signed download URLs."
+---
+
+The `/single-documents` endpoints manage standalone documents (not attached to a project). For project-scoped documents, see the [Projects API](/api/projects). All endpoints require authentication.
+
+## List documents
+
+```
+GET /single-documents
+```
+
+Returns all standalone documents owned by the authenticated user, ordered by creation date descending.
+
+**Response fields:**
+
+<ResponseField name="id" type="string">Unique document ID (UUID)</ResponseField>
+<ResponseField name="filename" type="string">Original filename</ResponseField>
+<ResponseField name="file_type" type="string">`pdf`, `docx`, or `doc`</ResponseField>
+<ResponseField name="size_bytes" type="number">File size in bytes</ResponseField>
+<ResponseField name="page_count" type="number | null">Page count (PDF only)</ResponseField>
+<ResponseField name="status" type="string">`processing`, `ready`, or `error`</ResponseField>
+<ResponseField name="current_version_id" type="string | null">ID of the active version</ResponseField>
+<ResponseField name="created_at" type="string">ISO 8601 timestamp</ResponseField>
+
+---
+
+## Upload a document
+
+```
+POST /single-documents
+```
+
+Uploads a new document. The file is stored in S3, converted to PDF (DOCX/DOC only), and a V1 version row is created.
+
+**Request:** `multipart/form-data`
+
+<ParamField body="file" type="file" required>
+  The document file. Accepted types: `.pdf`, `.docx`, `.doc`
+</ParamField>
+
+**Response:** `201 Created` — the full document record.
+
+<Warning>
+Files larger than 50 MB will be rejected (Express JSON/body limit is set to 50 MB).
+</Warning>
+
+---
+
+## Display a document
+
+```
+GET /single-documents/:documentId/display
+```
+
+Streams the document as a PDF for inline display. DOCX/DOC files are served using their pre-converted PDF rendition if available, otherwise the raw DOCX bytes.
+
+<ParamField query="version_id" type="string">
+  Optional. Render a specific historical version instead of the current one.
+</ParamField>
+
+**Response:** `application/pdf` or `application/vnd.openxmlformats-officedocument.wordprocessingml.document`
+
+---
+
+## Get a signed download URL
+
+```
+GET /single-documents/:documentId/url
+```
+
+Returns a 1-hour signed URL for downloading the document file.
+
+<ParamField query="version_id" type="string">
+  Optional. Get the URL for a specific version.
+</ParamField>
+
+**Response:**
+
+<ResponseField name="url" type="string">Pre-signed download URL (1 hour expiry)</ResponseField>
+<ResponseField name="filename" type="string">Suggested download filename</ResponseField>
+<ResponseField name="version_id" type="string">The version this URL points to</ResponseField>
+<ResponseField name="has_pdf_rendition" type="boolean">Whether a PDF rendition exists (for DOCX viewer selection)</ResponseField>
+
+---
+
+## Download raw DOCX bytes
+
+```
+GET /single-documents/:documentId/docx
+```
+
+Streams the raw `.docx` bytes. Used by the frontend DOCX viewer to load tracked-change documents without CORS issues from signed URLs.
+
+<ParamField query="version_id" type="string">
+  Optional. Stream a specific version.
+</ParamField>
+
+---
+
+## List versions
+
+```
+GET /single-documents/:documentId/versions
+```
+
+Returns the full version history for a document.
+
+**Response:**
+
+<ResponseField name="current_version_id" type="string | null">The active version ID</ResponseField>
+<ResponseField name="versions" type="array">
+  <Expandable title="version object">
+    <ResponseField name="id" type="string">Version ID</ResponseField>
+    <ResponseField name="version_number" type="number | null">Sequential version number (V1, V2, …)</ResponseField>
+    <ResponseField name="source" type="string">`upload`, `user_upload`, or `assistant_edit`</ResponseField>
+    <ResponseField name="display_name" type="string | null">Human-readable version label</ResponseField>
+    <ResponseField name="created_at" type="string">ISO 8601 timestamp</ResponseField>
+  </Expandable>
+</ResponseField>
+
+---
+
+## Upload a new version
+
+```
+POST /single-documents/:documentId/versions
+```
+
+Uploads a new version of an existing document. The uploaded file must match the document's file type.
+
+**Request:** `multipart/form-data`
+
+<ParamField body="file" type="file" required>
+  New version file. Must match the existing document's file type.
+</ParamField>
+<ParamField body="display_name" type="string">
+  Optional. Human-readable label for this version (e.g. "Revised draft").
+</ParamField>
+
+**Response:** `201 Created` — the new version row.
+
+---
+
+## Rename a version
+
+```
+PATCH /single-documents/:documentId/versions/:versionId
+```
+
+Updates the display name for a version.
+
+<ParamField body="display_name" type="string">
+  New label. Pass an empty string or omit to clear the override.
+</ParamField>
+
+---
+
+## Accept a tracked change
+
+```
+POST /single-documents/:documentId/edits/:editId/accept
+```
+
+Accepts a specific AI-suggested tracked change in a DOCX document. The change is permanently written into the document bytes.
+
+**Response:**
+
+<ResponseField name="ok" type="boolean">Always `true`</ResponseField>
+<ResponseField name="version_id" type="string">Current version ID after resolution</ResponseField>
+<ResponseField name="download_url" type="string">Download URL for the updated document</ResponseField>
+<ResponseField name="remaining_pending" type="number">Count of unresolved pending edits</ResponseField>
+<ResponseField name="already_resolved" type="boolean">Present (and `true`) if the edit was already resolved</ResponseField>
+
+---
+
+## Reject a tracked change
+
+```
+POST /single-documents/:documentId/edits/:editId/reject
+```
+
+Rejects a specific AI-suggested tracked change. The change is removed from the document. Same response shape as accept.
+
+---
+
+## Download multiple documents as ZIP
+
+```
+POST /single-documents/download-zip
+```
+
+Packages multiple documents into a ZIP archive and streams it.
+
+<ParamField body="document_ids" type="string[]" required>
+  Array of document IDs to include in the ZIP.
+</ParamField>
+
+**Response:** `application/zip` stream, filename `documents.zip`.
+
+---
+
+## Delete a document
+
+```
+DELETE /single-documents/:documentId
+```
+
+Permanently deletes the document record and all associated storage files (all versions, PDF renditions).
+
+**Response:** `204 No Content`

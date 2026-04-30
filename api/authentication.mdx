@@ -1,0 +1,66 @@
+---
+title: "API authentication with Supabase JWT tokens"
+description: "Mike API endpoints require a Supabase JWT access token passed as a Bearer token in the Authorization header. Learn how to obtain and use tokens."
+---
+
+Mike's API uses Supabase JWT authentication. Every endpoint requires a valid access token obtained by signing in through Supabase Auth. The token is passed as a `Bearer` token in the `Authorization` header.
+
+## Obtain a token
+
+Sign in using the Supabase JavaScript client with the **anon key** (public key, safe for frontend use):
+
+```typescript
+import { createClient } from '@supabase/supabase-js'
+
+const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
+
+const { data, error } = await supabase.auth.signInWithPassword({
+  email: 'user@example.com',
+  password: 'password',
+})
+
+const token = data.session?.access_token
+```
+
+You can also sign in via the Mike frontend at `http://localhost:3000/login` and inspect the session token from browser developer tools or the Supabase client.
+
+## Pass the token
+
+Include the token in every API request as a `Bearer` token:
+
+```bash
+curl -H "Authorization: Bearer <your-token>" \
+  http://localhost:3001/projects
+```
+
+Or in TypeScript:
+
+```typescript
+const response = await fetch('http://localhost:3001/projects', {
+  headers: {
+    'Authorization': `Bearer ${token}`,
+    'Content-Type': 'application/json',
+  },
+})
+```
+
+## Token expiry
+
+Supabase JWTs expire after 1 hour by default. Use the Supabase client's `onAuthStateChange` listener or `refreshSession()` to keep tokens fresh:
+
+```typescript
+const { data } = await supabase.auth.refreshSession()
+const newToken = data.session?.access_token
+```
+
+## Error responses
+
+| Response | Cause |
+|---|---|
+| `401 Missing or invalid Authorization header` | The `Authorization` header is absent or doesn't start with `Bearer ` |
+| `401 Invalid or expired token` | The JWT is expired or was issued for a different Supabase project |
+| `500 Server auth is not configured` | The backend is missing `SUPABASE_URL` or `SUPABASE_SECRET_KEY` |
+
+<Note>
+The `SUPABASE_ANON_KEY` (public key) is used client-side to sign in. The `SUPABASE_SECRET_KEY` (service role key) is only used server-side by the backend and must never be exposed to clients.
+</Note>

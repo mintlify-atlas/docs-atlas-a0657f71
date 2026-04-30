@@ -1,0 +1,75 @@
+---
+title: "Configure AI model selection and API keys in Mike"
+description: "Mike supports Claude and Gemini models for chat, tabular extraction, and title generation. Learn how to configure which models are available."
+---
+
+Mike supports two AI providers out of the box: Claude (Anthropic) and Gemini (Google). Models are organised into three tiers based on the task they serve. Users can choose their preferred model for each tier from the account settings page, and Mike will use whichever provider key is available — either the instance-level key you set in the backend environment or the user's own key stored in their profile.
+
+## Model tiers
+
+Mike routes requests to different model tiers depending on the task. This lets you balance cost and capability across workloads.
+
+### Main chat models
+
+Used for the primary document-chat interface. These are the most capable models available to users.
+
+| Provider | Models |
+|---|---|
+| Anthropic (Claude) | `claude-opus-4-7`, `claude-sonnet-4-6` |
+| Google (Gemini) | `gemini-3.1-pro-preview`, `gemini-3-flash-preview` |
+
+**Default:** `gemini-3-flash-preview`
+
+### Tabular review models
+
+Used for structured data extraction in tabular review workflows. Mid-tier models balance extraction accuracy with cost.
+
+| Provider | Models |
+|---|---|
+| Anthropic (Claude) | `claude-sonnet-4-6` |
+| Google (Gemini) | `gemini-3-flash-preview` |
+
+**Default:** `gemini-3-flash-preview`
+
+### Title generation models
+
+Used for lightweight tasks such as auto-generating chat and document titles. Low-tier models keep costs minimal for high-frequency calls.
+
+| Provider | Models |
+|---|---|
+| Anthropic (Claude) | `claude-haiku-4-5` |
+| Google (Gemini) | `gemini-3.1-flash-lite-preview` |
+
+**Default:** `gemini-3.1-flash-lite-preview`
+
+<Tip>
+  You only need one provider key to get started. Gemini is the default for all three tiers, so setting `GEMINI_API_KEY` in `backend/.env` is enough to have a fully functional instance. Add `ANTHROPIC_API_KEY` when you want to offer Claude models as an option.
+</Tip>
+
+## API key configuration
+
+Set provider keys in `backend/.env`. These serve as instance-level fallbacks — they are used whenever a user has not supplied their own key in their account settings.
+
+```env
+GEMINI_API_KEY=your-google-ai-studio-key
+ANTHROPIC_API_KEY=your-anthropic-key
+```
+
+| Variable | Provider | Where to get it |
+|---|---|---|
+| `GEMINI_API_KEY` | Google Gemini | [Google AI Studio](https://aistudio.google.com/app/apikey) |
+| `ANTHROPIC_API_KEY` | Anthropic Claude | [Anthropic Console](https://console.anthropic.com/) |
+
+<Note>
+  If you want to proxy requests through OpenRouter instead of calling providers directly, set `OPENROUTER_API_KEY` as well. OpenRouter-proxied model IDs follow the same `claude-*` / `gemini-*` naming convention and are routed transparently.
+</Note>
+
+## Per-user model settings
+
+Each user can override the default model selection from their account settings page. Mike stores their preferences in the `user_profiles` table:
+
+- **`tabular_model`** — which model to use for tabular review extractions
+- **`gemini_api_key`** — the user's own Gemini key (takes precedence over the instance key)
+- **`claude_api_key`** — the user's own Claude key (takes precedence over the instance key)
+
+When a user supplies their own key, Mike routes their requests through that key exclusively, so their usage is billed directly to their account rather than yours. The title model is resolved automatically: if the user has a Gemini key set, `gemini-3.1-flash-lite-preview` is used; if they only have a Claude key, `claude-haiku-4-5` is used instead.
